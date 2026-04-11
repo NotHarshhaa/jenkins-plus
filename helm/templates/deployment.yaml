@@ -1,0 +1,184 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jenkins-plus.fullname" . }}
+  labels:
+    {{- include "jenkins-plus.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "jenkins-plus.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: controller
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap-jcasc.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "jenkins-plus.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: controller
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "jenkins-plus.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: copy-plugins
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              cp -rn /usr/share/jenkins/ref/plugins/. /var/jenkins_home/plugins/ || true
+          securityContext:
+            runAsUser: 1000
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+      containers:
+        - name: jenkins
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: agent
+              containerPort: 50000
+              protocol: TCP
+          env:
+            - name: ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jenkins-plus.fullname" . }}-secret
+                  key: admin-user
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jenkins-plus.fullname" . }}-secret
+                  key: admin-password
+            - name: JENKINS_URL
+              value: {{ include "jenkins-plus.url" . | quote }}
+            - name: CASC_JENKINS_CONFIG
+              value: /var/jenkins_home/casc_configs
+            {{- if .Values.oidc.enabled }}
+            - name: OIDC_ISSUER
+              value: {{ .Values.oidc.issuer | quote }}
+            - name: OIDC_CLIENT_ID
+              value: {{ .Values.oidc.clientId | quote }}
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jenkins-plus.fullname" . }}-secret
+                  key: oidc-client-secret
+            {{- end }}
+            {{- if .Values.github.appId }}
+            - name: GITHUB_APP_ID
+              value: {{ .Values.github.appId | quote }}
+            - name: GITHUB_ORG
+              value: {{ .Values.github.org | quote }}
+            - name: GITHUB_APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jenkins-plus.fullname" . }}-secret
+                  key: github-app-private-key
+            {{- end }}
+            {{- if .Values.vault.enabled }}
+            - name: VAULT_URL
+              value: {{ .Values.vault.addr | quote }}
+            - name: VAULT_ROLE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jenkins-plus.fullname" . }}-secret
+                  key: vault-role-id
+            - name: VAULT_SECRET_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jenkins-plus.fullname" . }}-secret
+                  key: vault-secret-id
+            {{- end }}
+            {{- if .Values.slack.enabled }}
+            - name: SLACK_TEAM_DOMAIN
+              value: {{ .Values.slack.workspace | quote }}
+            - name: SLACK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jenkins-plus.fullname" . }}-secret
+                  key: slack-token
+            {{- end }}
+            {{- if .Values.sonar.enabled }}
+            - name: SONAR_URL
+              value: {{ .Values.sonar.url | quote }}
+            - name: SONAR_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "jenkins-plus.fullname" . }}-secret
+                  key: sonar-token
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 20"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+            - name: casc-config
+              mountPath: /var/jenkins_home/casc_configs
+              readOnly: false
+      volumes:
+        - name: jenkins-home
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "jenkins-plus.fullname" . }}-pvc
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: casc-config
+          configMap:
+            name: {{ if .Values.jcasc.existingConfigMap }}{{ .Values.jcasc.existingConfigMap }}{{ else }}{{ include "jenkins-plus.fullname" . }}-jcasc{{ end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

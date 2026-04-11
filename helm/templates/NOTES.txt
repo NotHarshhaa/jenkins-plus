@@ -1,0 +1,59 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  jenkins-plus {{ .Chart.Version }} — successfully deployed!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗  URLs
+──────────────────────────────────────────────────────────────────────────────
+{{- if .Values.ingress.enabled }}
+  Jenkins:   {{ if .Values.ingress.tls }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}/
+  {{- if .Values.ui.enabled }}
+  Dashboard: {{ if .Values.ingress.tls }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}/ui/
+  {{- end }}
+{{- else }}
+  Jenkins is not exposed via Ingress. To access it locally, run:
+
+    kubectl --namespace {{ .Release.Namespace }} port-forward \
+      svc/{{ include "jenkins-plus.fullname" . }} 8080:8080
+
+  Then open: http://localhost:8080
+{{- end }}
+
+🔑  Admin credentials
+──────────────────────────────────────────────────────────────────────────────
+  Username: {{ .Values.admin.user }}
+  Password: retrieve with:
+
+    kubectl --namespace {{ .Release.Namespace }} get secret \
+      {{ include "jenkins-plus.fullname" . }}-secret \
+      -o jsonpath="{.data.admin-password}" | base64 -d && echo
+
+⚙️  Check plugin installation status
+──────────────────────────────────────────────────────────────────────────────
+  Find the controller pod name:
+
+    kubectl --namespace {{ .Release.Namespace }} get pods \
+      -l "app.kubernetes.io/name={{ include "jenkins-plus.name" . }},app.kubernetes.io/component=controller"
+
+  Then run the verifier:
+
+    kubectl --namespace {{ .Release.Namespace }} exec -it <pod-name> -- \
+      /usr/local/bin/jenkins-plus/plugin-verify.sh
+
+🛠️  jpctl commands (if installed)
+──────────────────────────────────────────────────────────────────────────────
+  jpctl status   --url {{ include "jenkins-plus.url" . }}
+  jpctl plugin list --url {{ include "jenkins-plus.url" . }}
+  jpctl config export --url {{ include "jenkins-plus.url" . }}
+
+📊  Prometheus metrics
+──────────────────────────────────────────────────────────────────────────────
+{{- if .Values.prometheus.enabled }}
+  Metrics endpoint: {{ include "jenkins-plus.url" . }}/prometheus
+  {{- if .Values.prometheus.serviceMonitor.enabled }}
+  ServiceMonitor:   deployed (Prometheus Operator will auto-discover it)
+  {{- end }}
+{{- else }}
+  Prometheus integration is disabled. Set prometheus.enabled=true to enable.
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

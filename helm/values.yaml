@@ -1,0 +1,196 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# jenkins-plus Helm chart — default values
+# Override any field with -f myvalues.yaml or --set key=value
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Container image ───────────────────────────────────────────────────────────
+image:
+  repository: notharshaa/jenkins-plus
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# ── Admin account ─────────────────────────────────────────────────────────────
+# In production set existingSecret and leave password empty.
+admin:
+  user: admin
+  password: changeme
+  # existingSecret: jenkins-plus-admin-secret
+  # existingSecretPasswordKey: admin-password
+
+# ── JCasC configuration ───────────────────────────────────────────────────────
+jcasc:
+  # If set, mounts this ConfigMap instead of generating one from inline config.
+  existingConfigMap: ""
+  # Inline JCasC override block (merged with the image-baked config at runtime)
+  config: {}
+
+# ── OIDC / SSO ────────────────────────────────────────────────────────────────
+oidc:
+  enabled: false
+  issuer: ""
+  clientId: ""
+  clientSecret: ""
+  # existingSecret: ""      # key: oidc-client-secret
+
+# ── GitHub ────────────────────────────────────────────────────────────────────
+github:
+  org: ""
+  appId: ""
+  # Multi-line PEM; store in a Kubernetes secret for production
+  privateKey: ""
+  # existingSecret: ""      # key: github-app-private-key
+
+# ── HashiCorp Vault ───────────────────────────────────────────────────────────
+vault:
+  enabled: false
+  addr: "http://vault:8200"
+  roleId: ""
+  secretId: ""
+  # existingSecret: ""      # keys: vault-role-id, vault-secret-id
+
+# ── Slack ─────────────────────────────────────────────────────────────────────
+slack:
+  enabled: false
+  workspace: ""
+  token: ""
+  defaultChannel: "#ci-builds"
+  # existingSecret: ""      # key: slack-token
+
+# ── SonarQube ─────────────────────────────────────────────────────────────────
+sonar:
+  enabled: false
+  url: "http://sonarqube:9000"
+  token: ""
+  # existingSecret: ""      # key: sonar-token
+
+# ── Kubernetes agents ─────────────────────────────────────────────────────────
+agents:
+  replicas: 2
+  image: jenkins/inbound-agent:latest-jdk21
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# ── Persistence (jenkins_home) ────────────────────────────────────────────────
+persistence:
+  enabled: true
+  size: 50Gi
+  storageClass: ""       # "" = cluster default
+  accessMode: ReadWriteOnce
+  # existingClaim: ""
+
+# ── Ingress ───────────────────────────────────────────────────────────────────
+ingress:
+  enabled: false
+  className: nginx
+  host: jenkins.example.com
+  tls: false
+  tlsSecretName: jenkins-plus-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/websocket-services: "jenkins-plus"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+
+# ── Resource limits (controller pod) ─────────────────────────────────────────
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+# ── Horizontal Pod Autoscaler ─────────────────────────────────────────────────
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+# ── Prometheus integration ────────────────────────────────────────────────────
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+    namespace: ""          # defaults to release namespace
+    interval: "30s"
+    scrapeTimeout: "10s"
+    labels: {}
+
+# ── Next.js UI ────────────────────────────────────────────────────────────────
+ui:
+  enabled: true
+  image:
+    repository: notharshaa/jenkins-plus-ui
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+# ── nginx (in-cluster reverse proxy) ─────────────────────────────────────────
+nginx:
+  enabled: false    # set true when not using an external Ingress controller
+
+# ── Grafana ───────────────────────────────────────────────────────────────────
+grafana:
+  enabled: false
+  adminPassword: admin
+
+# ── Service account ───────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  name: ""
+  # IRSA annotations (AWS EKS) — add eks.amazonaws.com/role-arn here
+  annotations: {}
+
+# ── Pod-level settings ────────────────────────────────────────────────────────
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# ── Scheduling ────────────────────────────────────────────────────────────────
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# ── Extra environment variables injected into the controller pod ─────────────
+extraEnv: []
+# - name: MY_CUSTOM_VAR
+#   value: "my-value"
+
+# ── Jenkins URL (overrides auto-detection) ────────────────────────────────────
+jenkinsUrl: ""    # defaults to http://<ingress.host> when ingress.enabled, else ClusterIP
+
+# ── Jenkins tunnel for inbound agents ────────────────────────────────────────
+jenkinsTunnel: ""  # defaults to <release-name>:50000

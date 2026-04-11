@@ -1,0 +1,76 @@
+version: 2
+
+project_name: jpctl
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - id: jpctl
+    main: ./main.go
+    binary: jpctl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: jpctl
+    builds:
+      - jpctl
+    name_template: "jpctl_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "Merge pull request"
+      - "Merge branch"
+
+release:
+  github:
+    owner: NotHarshhaa
+    name: jenkins-plus
+  name_template: "jpctl v{{.Version}}"
+  draft: false
+  prerelease: auto
+
+brews:
+  - name: jpctl
+    homepage: https://github.com/NotHarshhaa/jenkins-plus
+    description: "CLI for managing jenkins-plus instances"
+    repository:
+      owner: NotHarshhaa
+      name: homebrew-tap
+    install: |
+      bin.install "jpctl"
+    test: |
+      system "#{bin}/jpctl", "--version"

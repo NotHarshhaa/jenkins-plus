@@ -1,0 +1,65 @@
+{{- if not .Values.jcasc.existingConfigMap }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "jenkins-plus.fullname" . }}-jcasc
+  labels:
+    {{- include "jenkins-plus.labels" . | nindent 4 }}
+data:
+  jenkins.yaml: |
+    jenkins:
+      systemMessage: "Welcome to jenkins-plus — managed by Helm"
+      numExecutors: 0
+      mode: EXCLUSIVE
+      agentProtocols:
+        - "WebSocket"
+      securityRealm:
+        {{- if .Values.oidc.enabled }}
+        oic:
+          clientId: {{ .Values.oidc.clientId | quote }}
+          clientSecret: "${OIDC_CLIENT_SECRET}"
+          wellKnownOpenIDConfigurationUrl: "{{ .Values.oidc.issuer }}/.well-known/openid-configuration"
+          userNameField: "preferred_username"
+          emailFieldName: "email"
+          fullNameFieldName: "name"
+          escapeHatchEnabled: true
+          escapeHatchUsername: "${ADMIN_USER}"
+          escapeHatchSecret: "${ADMIN_PASSWORD}"
+        {{- else }}
+        local:
+          allowsSignup: false
+          users:
+            - id: "${ADMIN_USER}"
+              password: "${ADMIN_PASSWORD}"
+        {{- end }}
+      authorizationStrategy:
+        projectMatrix:
+          permissions:
+            - "USER:hudson.model.Hudson.Administer:${ADMIN_USER}"
+            - "GROUP:hudson.model.Hudson.Read:authenticated"
+            - "GROUP:hudson.model.Item.Read:authenticated"
+            - "GROUP:hudson.model.Item.Build:authenticated"
+            - "GROUP:hudson.model.View.Read:authenticated"
+      crumbIssuer:
+        standard:
+          excludeClientIPFromCrumb: true
+      quietPeriod: 5
+      scmCheckoutRetryCount: 2
+    {{- if .Values.slack.enabled }}
+    unclassified:
+      slackNotifier:
+        teamDomain: {{ .Values.slack.workspace | quote }}
+        tokenCredentialId: "slack-token"
+    {{- end }}
+    {{- if .Values.sonar.enabled }}
+      sonarGlobalConfiguration:
+        buildWrapperEnabled: true
+        installations:
+          - name: "SonarQube"
+            serverUrl: {{ .Values.sonar.url | quote }}
+            credentialsId: "sonar-token"
+    {{- end }}
+    {{- with .Values.jcasc.config }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

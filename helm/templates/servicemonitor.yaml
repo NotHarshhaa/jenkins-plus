@@ -1,0 +1,29 @@
+{{- if and .Values.prometheus.enabled .Values.prometheus.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "jenkins-plus.fullname" . }}
+  namespace: {{ .Values.prometheus.serviceMonitor.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "jenkins-plus.labels" . | nindent 4 }}
+    {{- with .Values.prometheus.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "jenkins-plus.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: controller
+  endpoints:
+    - port: http
+      path: /prometheus
+      interval: {{ .Values.prometheus.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.prometheus.serviceMonitor.scrapeTimeout }}
+      basicAuth:
+        username:
+          name: {{ include "jenkins-plus.fullname" . }}-secret
+          key: admin-user
+        password:
+          name: {{ include "jenkins-plus.fullname" . }}-secret
+          key: admin-password
+{{- end }}

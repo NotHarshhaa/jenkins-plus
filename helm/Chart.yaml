@@ -1,0 +1,28 @@
+apiVersion: v2
+name: jenkins-plus
+version: 1.0.0
+appVersion: "2.504"
+description: >-
+  Hardened Jenkins LTS with zero click-ops setup, bundled plugins, JCasC,
+  shared Groovy library, Kubernetes agents, Prometheus metrics, and a Next.js
+  management UI.
+type: application
+keywords:
+  - jenkins
+  - ci
+  - cd
+  - devops
+  - pipeline
+  - kubernetes
+home: https://github.com/NotHarshhaa/jenkins-plus
+sources:
+  - https://github.com/NotHarshhaa/jenkins-plus
+maintainers:
+  - name: NotHarshhaa
+    email: harshhaa03@gmail.com
+    url: https://github.com/NotHarshhaa
+icon: https://raw.githubusercontent.com/NotHarshhaa/jenkins-plus/main/docs/logo.png
+annotations:
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial release
