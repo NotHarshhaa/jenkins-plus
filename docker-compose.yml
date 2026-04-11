@@ -1,0 +1,142 @@
+version: "3.9"
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  jenkins-net:
+    driver: bridge
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  jenkins-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# ── Services ─────────────────────────────────────────────────────────────────
+services:
+
+  # ── Jenkins controller ──────────────────────────────────────────────────────
+  jenkins-plus:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: notharshaa/jenkins-plus:latest
+    container_name: jenkins-plus
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins-data:/var/jenkins_home
+    env_file:
+      - .env
+    environment:
+      - JENKINS_URL=${JENKINS_URL:-http://localhost:8080}
+    networks:
+      - jenkins-net
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
+
+  # ── Jenkins inbound agents (static, 2 replicas) ────────────────────────────
+  jenkins-agent:
+    image: jenkins/inbound-agent:latest-jdk21
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JENKINS_URL=${JENKINS_URL:-http://jenkins-plus:8080}
+      - JENKINS_TUNNEL=${JENKINS_TUNNEL:-jenkins-plus:50000}
+      - JENKINS_AGENT_NAME=${JENKINS_AGENT_NAME:-docker-agent}
+      - JENKINS_SECRET=${JENKINS_AGENT_SECRET:-}
+      - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
+    networks:
+      - jenkins-net
+    depends_on:
+      jenkins-plus:
+        condition: service_healthy
+
+  # ── nginx reverse proxy ─────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - jenkins-net
+    depends_on:
+      jenkins-plus:
+        condition: service_healthy
+      ui:
+        condition: service_started
+
+  # ── Prometheus ──────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus:/etc/prometheus:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --web.enable-lifecycle
+      - --storage.tsdb.retention.time=30d
+    networks:
+      - jenkins-net
+
+  # ── Grafana ─────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+    networks:
+      - jenkins-net
+    depends_on:
+      - prometheus
+
+  # ── Next.js UI ───────────────────────────────────────────────────────────────
+  ui:
+    build:
+      context: ./ui
+    container_name: jenkins-plus-ui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NEXT_PUBLIC_JENKINS_URL=${NEXT_PUBLIC_JENKINS_URL:-http://localhost:8080}
+      - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-jenkins-plus}
+      - NODE_ENV=production
+    networks:
+      - jenkins-net
+    depends_on:
+      jenkins-plus:
+        condition: service_healthy
