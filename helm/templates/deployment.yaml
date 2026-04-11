@@ -56,9 +56,6 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-            - name: agent
-              containerPort: 50000
-              protocol: TCP
           env:
             - name: ADMIN_USER
               valueFrom:

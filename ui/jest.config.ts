@@ -2,14 +2,19 @@ import type { Config } from "jest";
 
 const config: Config = {
   preset: "ts-jest",
-  testEnvironment: "node",
+  testEnvironment: "jsdom",
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
-  transform: {
-    "^.+\\.tsx?$": ["ts-jest", { tsconfig: { strict: true } }],
-  },
-  testMatch: ["**/__tests__/**/*.ts?(x)", "**/?(*.)+(spec|test).ts?(x)"],
+  collectCoverageFrom: [
+    "app/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "lib/**/*.{ts}",
+    "!**/*.d.ts",
+    "!**/node_modules/**",
+  ],
+  testMatch: ["**/__tests__/**/*.test.ts"],
 };
 
 export default config;

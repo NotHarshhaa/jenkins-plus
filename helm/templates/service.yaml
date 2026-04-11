@@ -14,10 +14,6 @@ spec:
       port: 8080
       targetPort: http
       protocol: TCP
-    - name: agent
-      port: 50000
-      targetPort: agent
-      protocol: TCP
 ---
 {{- if .Values.ui.enabled }}
 apiVersion: v1

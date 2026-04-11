@@ -5,7 +5,7 @@
 
 # ── Container image ───────────────────────────────────────────────────────────
 image:
-  repository: notharshaa/jenkins-plus
+  repository: ghcr.io/notharshaa/jenkins-plus
   tag: "latest"
   pullPolicy: IfNotPresent
 
@@ -133,7 +133,7 @@ prometheus:
 ui:
   enabled: true
   image:
-    repository: notharshaa/jenkins-plus-ui
+    repository: ghcr.io/notharshaa/jenkins-plus-ui
     tag: "latest"
     pullPolicy: IfNotPresent
   replicas: 1
@@ -191,6 +191,3 @@ extraEnv: []
 
 # ── Jenkins URL (overrides auto-detection) ────────────────────────────────────
 jenkinsUrl: ""    # defaults to http://<ingress.host> when ingress.enabled, else ClusterIP
-
-# ── Jenkins tunnel for inbound agents ────────────────────────────────────────
-jenkinsTunnel: ""  # defaults to <release-name>:50000

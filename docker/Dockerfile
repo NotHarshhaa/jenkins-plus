@@ -80,7 +80,7 @@ RUN chown -R jenkins:jenkins /var/jenkins_home/casc_configs \
 
 USER jenkins
 
-EXPOSE 8080 50000
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
     CMD curl -sf http://localhost:8080/login > /dev/null || exit 1

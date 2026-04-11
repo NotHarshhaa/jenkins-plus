@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
+    "@testing-library/jest-dom": "^6.4.2",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
@@ -60,7 +61,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
     "jest": "^29.7.0",
-    "jest-environment-node": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
     "tailwindcss-animate": "^1.0.7",

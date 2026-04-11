@@ -1,0 +1,50 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# jenkins-plus — .gitattributes
+# Ensures consistent line endings across platforms
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Shell scripts - LF line endings
+*.sh text eol=lf
+
+# Groovy scripts - LF line endings
+*.groovy text eol=lf
+
+# YAML files - LF line endings
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# JSON files - LF line endings
+*.json text eol=lf
+
+# Markdown files - LF line endings
+*.md text eol=lf
+
+# Go files - LF line endings
+*.go text eol=lf
+*.mod text eol=lf
+*.sum text eol=lf
+
+# Docker files - LF line endings
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+
+# Terraform files - LF line endings
+*.tf text eol=lf
+
+# Text files
+*.txt text eol=lf
+
+# Batch files for Windows - CRLF line endings
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# No line ending normalization for binaries
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.tgz binary

@@ -25,7 +25,6 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
-      - "50000:50000"
     volumes:
       - jenkins-data:/var/jenkins_home
     env_file:
@@ -51,7 +50,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - JENKINS_URL=${JENKINS_URL:-http://jenkins-plus:8080}
-      - JENKINS_TUNNEL=${JENKINS_TUNNEL:-jenkins-plus:50000}
+      - JENKINS_WEB_SOCKET=true
       - JENKINS_AGENT_NAME=${JENKINS_AGENT_NAME:-docker-agent}
       - JENKINS_SECRET=${JENKINS_AGENT_SECRET:-}
       - JENKINS_AGENT_WORKDIR=/home/jenkins/agent

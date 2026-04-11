@@ -84,7 +84,6 @@ jenkins:
         serverUrl: "${KUBE_API_URL:-https://kubernetes.default.svc}"
         namespace: "${JENKINS_NAMESPACE:-jenkins}"
         jenkinsUrl: "${JENKINS_URL:-http://jenkins:8080}"
-        jenkinsTunnel: "${JENKINS_TUNNEL:-jenkins-agent:50000}"
         credentialsId: ""
         connectTimeout: 5
         readTimeout: 15
