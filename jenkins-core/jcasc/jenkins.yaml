@@ -21,10 +21,6 @@ jenkins:
   numExecutors: 0
   mode: EXCLUSIVE
 
-  # Modern WebSocket transport — avoids JNLP firewall issues
-  agentProtocols:
-    - "WebSocket"
-
   # ── Security realm ─────────────────────────────────────────────────────────
   # Use OIDC when OIDC_ISSUER is provided; fall back to local accounts otherwise.
   securityRealm:
@@ -46,17 +42,17 @@ jenkins:
   # ── Authorisation strategy ─────────────────────────────────────────────────
   authorizationStrategy:
     projectMatrix:
-      permissions:
+      grantedPermissions:
         # Full admin for the escape-hatch / service account
-        - "USER:hudson.model.Hudson.Administer:${ADMIN_USER:-admin}"
+        - "USER:${ADMIN_USER:-admin}:hudson.model.Hudson.Administer"
         # Authenticated users get read access across the board
-        - "GROUP:hudson.model.Hudson.Read:authenticated"
-        - "GROUP:hudson.model.Item.Read:authenticated"
-        - "GROUP:hudson.model.Item.Build:authenticated"
-        - "GROUP:hudson.model.Item.Cancel:authenticated"
-        - "GROUP:hudson.model.Item.Workspace:authenticated"
-        - "GROUP:hudson.model.Run.Replay:authenticated"
-        - "GROUP:hudson.model.View.Read:authenticated"
+        - "GROUP:authenticated:hudson.model.Hudson.Read"
+        - "GROUP:authenticated:hudson.model.Item.Read"
+        - "GROUP:authenticated:hudson.model.Item.Build"
+        - "GROUP:authenticated:hudson.model.Item.Cancel"
+        - "GROUP:authenticated:hudson.model.Item.Workspace"
+        - "GROUP:authenticated:hudson.model.Run.Replay"
+        - "GROUP:authenticated:hudson.model.View.Read"
         # Anonymous gets nothing (deny-by-default)
 
   # ── CSRF protection ────────────────────────────────────────────────────────

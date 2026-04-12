@@ -17,7 +17,7 @@ COPY jenkins-core/plugin-system/plugins.txt /usr/share/jenkins/plugins.txt
 
 RUN jenkins-plugin-cli \
         --plugin-file /usr/share/jenkins/plugins.txt \
-        --latest false \
+        --latest true \
         --verbose
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -62,6 +62,7 @@ ENV JENKINS_HOME=/var/jenkins_home
 COPY --from=plugin-installer /usr/share/jenkins/ref/plugins /usr/share/jenkins/ref/plugins
 
 # JCasC configuration (template — envsubst runs at container start via entrypoint.sh)
+ARG CACHEBUST=1
 COPY jenkins-core/jcasc/ /var/jenkins_home/casc_configs/
 
 # Shared library bundled into the image so pipelines work without network access
