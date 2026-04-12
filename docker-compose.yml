@@ -15,7 +15,7 @@ volumes:
 # ── Services ─────────────────────────────────────────────────────────────────
 services:
 
-  # ── Jenkins controller ──────────────────────────────────────────────────────
+  # ── Jenkins Core (Execution Engine) ───────────────────────────────────────
   jenkins-plus:
     build:
       context: .
@@ -40,7 +40,7 @@ services:
       start_period: 90s
       retries: 5
 
-  # ── Jenkins inbound agents (static, 2 replicas) ────────────────────────────
+  # ── Execution Layer: Docker Agents (static, 2 replicas) ─────────────────────
   jenkins-agent:
     image: jenkins/inbound-agent:latest-jdk21
     restart: unless-stopped
@@ -120,7 +120,7 @@ services:
     depends_on:
       - prometheus
 
-  # ── Next.js UI ───────────────────────────────────────────────────────────────
+  # ── UI Layer: Next.js Dashboard ───────────────────────────────────────────────
   ui:
     build:
       context: ./ui

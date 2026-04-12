@@ -151,20 +151,30 @@ docker run -d \
 │                        UI Layer                             │
 │   React Dashboard  │  Pipeline Builder  │  DORA Metrics    │
 └──────────────────────────┬──────────────────────────────────┘
-                           │ Nginx reverse proxy
+                           │
+                    Nginx Reverse Proxy
+                           │
 ┌──────────────────────────▼──────────────────────────────────┐
-│                     Plugin Engine                           │
-│   SCM Providers  │  Docker/K8s Agents  │  Vault / SOPS     │
+│                   API / Control Layer                       │
+│   (Jenkins REST API / Optional Custom Backend Service)      │
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
-│              Core — Jenkins LTS (hardened)                  │
-│   JCasC Bootstrap  │  Shared Library  │  RBAC + OIDC       │
+│              Jenkins Core (Execution Engine)                │
+│   - JCasC (Configuration as Code)                           │
+│   - Plugin System (SCM, Security, Pipelines, etc.)          │
+│   - Shared Library (Reusable pipeline logic)                │
+│   - RBAC + OIDC (Security Layer)                            │
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
-│                   Infrastructure                            │
-│   Docker Compose  │  Helm Chart  │  Terraform (AWS/GCP/Azure)│
+│                   Execution Layer (Agents)                  │
+│   Docker Agents │ Kubernetes Agents │ SSH Agents            │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────┐
+│                   Infrastructure Layer                      │
+│   Docker Compose │ Helm │ Terraform (AWS/GCP/Azure)         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -174,32 +184,65 @@ docker run -d \
 
 ```
 jenkins-plus/
-├── 📦 docker/
+├── 📦 docker/                      # Docker build artifacts
 │   ├── Dockerfile                  # Jenkins LTS base + plugin install
-│   ├── plugins.txt                 # 40+ pinned plugins
-│   └── jcasc/
-│       └── jenkins.yaml            # Full JCasC configuration
+│   ├── nginx/                      # Nginx reverse proxy config
+│   ├── grafana/                    # Grafana dashboards & provisioning
+│   ├── prometheus/                 # Prometheus configuration
+│   └── init.groovy.d/               # Init scripts for Jenkins
 │
-├── 🎨 ui/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── PipelineBuilder/    # Drag-drop stage editor
-│   │   │   ├── LogViewer/          # Streaming ANSI log viewer
-│   │   │   ├── DoraDashboard/      # DORA metrics with Recharts
-│   │   │   └── PluginMarket/       # Plugin marketplace
-│   │   └── App.tsx
-│   ├── package.json
-│   └── vite.config.ts
+├── 🎨 ui/                          # Next.js 14 UI Layer
+│   ├── app/                        # App router pages
+│   │   ├── dashboard/              # Main dashboard
+│   │   ├── pipeline-builder/       # Visual pipeline editor
+│   │   ├── dora/                   # DORA metrics
+│   │   ├── plugins/                # Plugin marketplace
+│   │   └── settings/               # Configuration UI
+│   ├── components/                 # React components
+│   │   ├── ui/                     # shadcn/ui primitives
+│   │   ├── pipeline-builder/       # Pipeline builder components
+│   │   ├── log-viewer/             # Streaming log viewer
+│   │   └── dora/                   # DORA metrics components
+│   ├── lib/                        # Utilities & helpers
+│   ├── hooks/                      # Custom React hooks
+│   ├── types/                      # TypeScript types
+│   └── package.json
 │
-├── 📚 shared-library/
-│   ├── vars/                       # Global pipeline steps
-│   │   ├── dockerBuild.groovy
-│   │   ├── helmDeploy.groovy
-│   │   ├── sonarScan.groovy
-│   │   └── slackNotify.groovy
-│   └── src/                        # Groovy utility classes
+├── ⚙️  jenkins-core/               # Jenkins Core (Execution Engine)
+│   ├── plugin-system/              # Plugin configuration
+│   │   ├── plugins.txt             # 50+ pinned plugins
+│   │   └── plugin-compat-matrix.json # Plugin compatibility matrix
+│   ├── jcasc/                      # JCasC (Configuration as Code)
+│   │   └── jenkins.yaml            # Full JCasC configuration
+│   └── shared-library/             # Reusable pipeline logic
+│       ├── vars/                   # Global pipeline steps
+│       │   ├── dockerBuild.groovy
+│       │   ├── helmDeploy.groovy
+│       │   ├── sonarScan.groovy
+│       │   ├── slackNotify.groovy
+│       │   └── owaspScan.groovy
+│       └── src/                    # Groovy utility classes
+│           └── org/jenkinsplus/
 │
-├── ☸️  helm/
+├── 🚀 execution-layer/            # Execution Layer (Agents)
+│   ├── kubernetes-agents/          # K8s pod templates
+│   │   ├── docker-agent.yaml       # Docker build agent
+│   │   ├── node-agent.yaml         # Node.js build agent
+│   │   ├── python-agent.yaml       # Python build agent
+│   │   └── go-agent.yaml           # Go build agent
+│   ├── docker-agents/              # Docker agent configuration
+│   │   └── README.md
+│   └── ssh-agents/                 # SSH agent configuration
+│       └── README.md
+│
+├── 🔌 api-control-layer/           # API / Control Layer
+│   ├── README.md                   # API layer documentation
+│   └── backend-stub/               # Optional custom backend service
+│       ├── server.js               # Express.js backend stub
+│       ├── package.json
+│       └── .env.example
+│
+├── ☸️  helm/                       # Kubernetes deployment
 │   ├── Chart.yaml
 │   ├── values.yaml                 # All tunables documented
 │   └── templates/
@@ -209,7 +252,7 @@ jenkins-plus/
 │       ├── pvc.yaml
 │       └── hpa.yaml
 │
-├── 🌍 terraform/
+├── 🌍 terraform/                   # Infrastructure as Code
 │   ├── aws/                        # ECS + EC2 modules
 │   ├── gcp/                        # GKE / Cloud Run
 │   └── azure/                      # AKS
@@ -218,11 +261,11 @@ jenkins-plus/
 │   ├── main.go
 │   └── cmd/
 │
-├── 📖 docs/
-│   ├── architecture.md
-│   ├── plugin-guide.md
-│   ├── jcasc-reference.md
-│   └── shared-library.md
+├── 📖 docs/                        # Documentation
+│   ├── architecture.md             # Detailed architecture guide
+│   ├── plugin-guide.md             # Plugin usage guide
+│   ├── jcasc-reference.md          # JCasC reference
+│   └── shared-library.md           # Shared library reference
 │
 ├── docker-compose.yml              # Local dev stack
 ├── Makefile                        # Common tasks

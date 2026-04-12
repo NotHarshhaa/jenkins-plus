@@ -13,7 +13,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 USER jenkins
 
-COPY plugin-engine/plugins.txt /usr/share/jenkins/plugins.txt
+COPY jenkins-core/plugin-system/plugins.txt /usr/share/jenkins/plugins.txt
 
 RUN jenkins-plugin-cli \
         --plugin-file /usr/share/jenkins/plugins.txt \
@@ -62,10 +62,10 @@ ENV JENKINS_HOME=/var/jenkins_home
 COPY --from=plugin-installer /usr/share/jenkins/ref/plugins /usr/share/jenkins/ref/plugins
 
 # JCasC configuration (template — envsubst runs at container start via entrypoint.sh)
-COPY plugin-engine/jcasc/ /var/jenkins_home/casc_configs/
+COPY jenkins-core/jcasc/ /var/jenkins_home/casc_configs/
 
 # Shared library bundled into the image so pipelines work without network access
-COPY plugin-engine/shared-library/ /var/jenkins_home/shared-library/
+COPY jenkins-core/shared-library/ /var/jenkins_home/shared-library/
 
 # Groovy init scripts (run before JCasC on every startup)
 COPY docker/init.groovy.d/ /usr/share/jenkins/ref/init.groovy.d/

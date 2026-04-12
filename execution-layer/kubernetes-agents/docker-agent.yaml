@@ -1,0 +1,132 @@
+---
+# docker-agent.yaml
+# Jenkins Kubernetes pod template — Docker build agent with Docker-in-Docker sidecar.
+#
+# Labels: docker  docker-build
+#
+# Containers:
+#   jnlp   — Jenkins inbound agent (required by Kubernetes plugin)
+#   docker  — Docker CLI client; communicates with dind over TCP
+#   dind    — Docker daemon (privileged); provides the actual build socket
+#
+# The two Docker containers share the /var/lib/docker volume so layer caches
+# are preserved within the pod lifetime.
+#
+# Usage in a Jenkinsfile:
+#   agent { label 'docker' }
+#   steps { container('docker') { sh 'docker build -t myapp:latest .' } }
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    jenkins-agent: docker-agent
+  annotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+spec:
+  serviceAccountName: jenkins-agent
+
+  # Prefer nodes that already have the dind image cached
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 50
+          preference:
+            matchExpressions:
+              - key: jenkins-pool
+                operator: In
+                values:
+                  - build
+
+  # Docker socket volume (shared between docker CLI and dind daemon)
+  volumes:
+    - name: docker-graph-storage
+      emptyDir: {}
+    - name: docker-sock
+      emptyDir: {}
+
+  containers:
+    # ── JNLP agent ──────────────────────────────────────────────────────────
+    - name: jnlp
+      image: jenkins/inbound-agent:3261.v9c670a_4748a_9-1
+      imagePullPolicy: IfNotPresent
+      workingDir: /home/jenkins/agent
+      env:
+        - name: JENKINS_AGENT_WORKDIR
+          value: /home/jenkins/agent
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run
+
+    # ── Docker CLI ───────────────────────────────────────────────────────────
+    - name: docker
+      image: docker:26.1.3
+      imagePullPolicy: IfNotPresent
+      workingDir: /home/jenkins/agent
+      command:
+        - /bin/sh
+        - -c
+        - cat
+      tty: true
+      env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          cpu: "2"
+          memory: 2Gi
+      volumeMounts:
+        - name: docker-graph-storage
+          mountPath: /var/lib/docker
+
+    # ── Docker-in-Docker daemon ──────────────────────────────────────────────
+    - name: dind
+      image: docker:26.1.3-dind
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        privileged: true
+      command:
+        - dockerd-entrypoint.sh
+      args:
+        - --host=tcp://0.0.0.0:2375
+        - --host=unix:///var/run/docker.sock
+        - --storage-driver=overlay2
+        - --tls=false
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+        limits:
+          cpu: "2"
+          memory: 4Gi
+      volumeMounts:
+        - name: docker-graph-storage
+          mountPath: /var/lib/docker
+        - name: docker-sock
+          mountPath: /var/run
+      readinessProbe:
+        exec:
+          command:
+            - docker
+            - info
+        initialDelaySeconds: 10
+        periodSeconds: 5
+        failureThreshold: 6
+
+  # Grace period allows in-flight docker operations to complete
+  terminationGracePeriodSeconds: 30
