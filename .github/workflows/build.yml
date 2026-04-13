@@ -112,6 +112,10 @@ jobs:
         run: |
           # Wait a bit more for Jenkins to be fully ready for API requests
           sleep 10
+          # First, test if Jenkins is reachable from inside the container
+          docker exec jenkins-plus curl -sf http://localhost:8080/login || echo "Jenkins not reachable on /login"
+          docker exec jenkins-plus curl -sf http://localhost:8080/pluginManager/api/json?depth=1 --user admin:testpassword || echo "API not reachable"
+          # Now run the actual verification
           docker exec jenkins-plus \
             env ADMIN_USER=admin ADMIN_PASSWORD=testpassword JENKINS_URL=http://localhost:8080 \
             bash /usr/local/bin/jenkins-plus/plugin-verify.sh
