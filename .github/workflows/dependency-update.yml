@@ -1,0 +1,44 @@
+name: Plugin Dependency Update
+
+# DISABLED: scripts/check-plugin-updates.js does not exist yet.
+# Uncomment this workflow once the script is created.
+on:
+  schedule:
+    - cron: '0 0 * * 1' # Every Monday at midnight UTC
+  workflow_dispatch:
+
+jobs:
+  check-plugin-updates:
+    name: Check for plugin updates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check plugin updates
+        id: check
+        run: |
+          # TODO: Create scripts/check-plugin-updates.js
+          echo "Plugin update script not implemented yet"
+          exit 1
+
+      - name: Create PR if updates found
+        if: steps.check.outputs.has-updates == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "chore: update Jenkins plugins"
+          body: |
+            Automated check found newer versions of Jenkins plugins.
+
+            Changes:
+            ${{ steps.check.outputs.changes }}
+          branch: chore/plugin-updates
+          commit-message: "chore: update Jenkins plugins"
+          labels: dependencies, automated

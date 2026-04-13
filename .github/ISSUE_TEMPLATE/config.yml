@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions?
+    url: https://github.com/NotHarshhaa/jenkins-plus/discussions/new
+    about: Ask questions and discuss ideas in GitHub Discussions
+  - name: Documentation
+    url: https://github.com/NotHarshhaa/jenkins-plus/tree/master/docs
+    about: Check the documentation for help

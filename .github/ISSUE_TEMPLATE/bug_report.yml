@@ -1,0 +1,103 @@
+name: Bug report
+description: File a bug to help us improve jenkins-plus
+title: "[BUG] "
+labels: ["bug"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: input
+    id: jenkins-version
+    attributes:
+      label: Jenkins Version
+      description: What version of jenkins-plus are you using?
+      placeholder: e.g., 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: What OS are you running on?
+      placeholder: e.g., Ubuntu 22.04, macOS 14, Windows 11
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment Method
+      description: How are you deploying jenkins-plus?
+      options:
+        - Docker Compose
+        - Kubernetes (Helm)
+        - AWS (Terraform)
+        - GCP (Terraform)
+        - Azure (Terraform)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots
+      description: Paste relevant logs or attach screenshots
+      render: text
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment Variables
+      description: List any relevant environment variables (sanitized)
+      render: shell
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: I agree to follow this project's Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
