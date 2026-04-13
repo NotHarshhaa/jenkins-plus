@@ -32,11 +32,12 @@ LABEL org.opencontainers.image.title="jenkins-plus" \
 
 USER root
 
-# Install envsubst (gettext), tini, curl (healthcheck)
+# Install envsubst (gettext), tini, curl (healthcheck), jq (JSON parsing)
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
         gettext-base \
         curl \
         ca-certificates \
+        jq \
     && rm -rf /var/lib/apt/lists/*
 
 # ── JVM & Jenkins tuning ──────────────────────────────────────────────────────

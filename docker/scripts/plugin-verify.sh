@@ -19,7 +19,7 @@ JENKINS_USER="${ADMIN_USER:-admin}"
 JENKINS_TOKEN="${ADMIN_PASSWORD:-admin}"
 PLUGINS_FILE="${PLUGINS_FILE:-/usr/share/jenkins/plugins.txt}"
 
-API_URL="${JENKINS_URL%/}/pluginManager/api/json?depth=1&tree=plugins[shortName,version,active,enabled,hasUpdate]"
+API_URL="${JENKINS_URL%/}/pluginManager/api/json?depth=1"
 
 echo "[plugin-verify] Checking plugins against ${PLUGINS_FILE} ..."
 echo "[plugin-verify] Jenkins API: ${API_URL}"
@@ -34,12 +34,17 @@ response=$(curl -sf \
     exit 1
 }
 
-# Extract shortNames of plugins that are both active and enabled
-active_plugins=$(echo "${response}" | \
-    grep -o '"shortName":"[^"]*","version":"[^"]*","active":true,"enabled":true' | \
-    grep -o '"shortName":"[^"]*"' | \
-    sed 's/"shortName":"//;s/"//' | \
-    sort)
+# Extract shortNames of plugins that are both active and enabled using jq if available, otherwise grep
+if command -v jq &>/dev/null; then
+    active_plugins=$(echo "${response}" | jq -r '.plugins[] | select(.active==true and .enabled==true) | .shortName' | sort)
+else
+    # Fallback to grep - extract shortName for plugins where active=true and enabled=true
+    active_plugins=$(echo "${response}" | \
+        grep -o '"shortName":"[^"]*","version":"[^"]*","active":true,"enabled":true' | \
+        grep -o '"shortName":"[^"]*"' | \
+        sed 's/"shortName":"//;s/"//' | \
+        sort)
+fi
 
 # ── Parse expected plugins from plugins.txt ───────────────────────────────────
 expected_plugins=$(grep -v '^#' "${PLUGINS_FILE}" | \

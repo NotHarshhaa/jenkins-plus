@@ -56,7 +56,7 @@ variable "tags" {
   description = "Map of tags to apply to all resources"
   type        = map(string)
   default = {
-    Project     = "jenkins-plus"
-    ManagedBy   = "terraform"
+    Project   = "jenkins-plus"
+    ManagedBy = "terraform"
   }
 }
