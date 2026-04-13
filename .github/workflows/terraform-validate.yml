@@ -12,6 +12,9 @@ on:
     paths:
       - 'terraform/**'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   validate-aws:
     name: Validate AWS Terraform

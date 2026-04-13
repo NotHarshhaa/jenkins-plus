@@ -15,6 +15,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: notharshaa/jenkins-plus
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ── UI unit tests ────────────────────────────────────────────────────────────
@@ -111,7 +112,7 @@ jobs:
         run: |
           docker exec jenkins-plus \
             env ADMIN_USER=admin ADMIN_PASSWORD=testpassword \
-            bash docker/scripts/plugin-verify.sh
+            bash /usr/local/bin/jenkins-plus/plugin-verify.sh
 
       - name: Collect Jenkins logs on failure
         if: failure()
