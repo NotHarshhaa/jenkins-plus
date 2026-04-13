@@ -110,8 +110,10 @@ jobs:
 
       - name: Run plugin verification
         run: |
+          # Wait a bit more for Jenkins to be fully ready for API requests
+          sleep 10
           docker exec jenkins-plus \
-            env ADMIN_USER=admin ADMIN_PASSWORD=testpassword \
+            env ADMIN_USER=admin ADMIN_PASSWORD=testpassword JENKINS_URL=http://localhost:8080 \
             bash /usr/local/bin/jenkins-plus/plugin-verify.sh
 
       - name: Collect Jenkins logs on failure
