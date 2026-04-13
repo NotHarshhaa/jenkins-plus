@@ -14,7 +14,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: notharshaa/jenkins-plus
+  IMAGE_NAME: notharshhaa/jenkins-plus
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
