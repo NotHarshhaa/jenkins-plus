@@ -1,0 +1,25 @@
+# security-oidc.yaml — OpenID Connect security realm (production)
+# Activated automatically by entrypoint.sh when OIDC_ISSUER is set.
+# A local escape-hatch admin account is still provisioned so you can
+# recover access if the OIDC provider is unreachable.
+
+jenkins:
+  securityRealm:
+    oic:
+      clientId: "${OIDC_CLIENT_ID}"
+      clientSecret: "${OIDC_CLIENT_SECRET}"
+      wellKnownOpenIDConfigurationUrl: "${OIDC_ISSUER}/.well-known/openid-configuration"
+      tokenServerUrl: "${OIDC_ISSUER}/oauth/token"
+      authorizationServerUrl: "${OIDC_ISSUER}/authorize"
+      userInfoServerUrl: "${OIDC_ISSUER}/userinfo"
+      userNameField: "email"
+      fullNameFieldName: "name"
+      emailFieldName: "email"
+      groupsFieldName: "groups"
+      scopes: "openid email profile"
+      disableSslVerification: false
+      logoutFromOpenidProvider: true
+      escapeHatchEnabled: true
+      escapeHatchUsername: "${ADMIN_USER:-admin}"
+      escapeHatchSecret: "${ADMIN_PASSWORD:-admin}"
+      escapeHatchGroup: ""

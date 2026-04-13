@@ -3,8 +3,6 @@
 // disables the legacy JNLP TCP port (-1 = disabled). Idempotent.
 
 import jenkins.model.Jenkins
-import jenkins.security.s4m.SlaveToMasterCallableWhitelist
-import jenkins.slaves.JnlpSlaveAgentProtocol
 
 try {
     Jenkins instance = Jenkins.getInstanceOrNull()

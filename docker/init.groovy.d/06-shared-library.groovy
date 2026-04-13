@@ -31,13 +31,14 @@ try {
         return
     }
 
-    // Use a filesystem-backed local SCM retriever so no network is needed
-    def localSCMSource = new hudson.plugins.filesystem_scm.FSCMSource(libPath)
-
-    // Fall back to a plain GitSCMSource if filesystem SCM plugin is absent
+    // Try filesystem-scm plugin first (no network needed), fall back to git file:// URI.
+    // Use dynamic class loading so the script compiles even when the plugin is absent.
     LibraryConfiguration lib
     try {
+        def fscmClass = Class.forName('hudson.plugins.filesystem_scm.FSCMSource')
+        def localSCMSource = fscmClass.getConstructor(String).newInstance(libPath)
         lib = new LibraryConfiguration(libName, new SCMSourceRetriever(localSCMSource))
+        println "[06-shared-library] Using filesystem-scm retriever."
     } catch (Exception ignored) {
         GitSCMSource gitSource = new GitSCMSource(
             "file://${libPath}"

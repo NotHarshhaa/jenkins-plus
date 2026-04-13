@@ -22,37 +22,31 @@ jenkins:
   mode: EXCLUSIVE
 
   # ── Security realm ─────────────────────────────────────────────────────────
-  # Use OIDC when OIDC_ISSUER is provided; fall back to local accounts otherwise.
-  securityRealm:
-    oic:
-      clientId: "${OIDC_CLIENT_ID:-jenkins-plus}"
-      clientSecret: "${OIDC_CLIENT_SECRET:-change-me-in-production}"
-      wellKnownOpenIDConfigurationUrl: "${OIDC_ISSUER:-https://accounts.example.com}/.well-known/openid-configuration"
-      userNameField: "preferred_username"
-      emailFieldName: "email"
-      fullNameFieldName: "name"
-      groupsFieldName: "groups"
-      scopes: "openid profile email groups"
-      logoutFromOpenidProvider: true
-      postLogoutRedirectUrl: "${JENKINS_URL:-http://localhost:8080}/login"
-      escapeHatchEnabled: true
-      escapeHatchUsername: "${ADMIN_USER:-admin}"
-      escapeHatchSecret: "${ADMIN_PASSWORD:-admin}"
+  # Auto-detected by entrypoint.sh:
+  #   • OIDC_ISSUER is set  → security-oidc.yaml  (OpenID Connect SSO)
+  #   • OIDC_ISSUER is empty → security-local.yaml (local admin account)
+  # See jenkins-core/jcasc/security-local.yaml and security-oidc.yaml.
 
   # ── Authorisation strategy ─────────────────────────────────────────────────
   authorizationStrategy:
     projectMatrix:
-      grantedPermissions:
+      entries:
         # Full admin for the escape-hatch / service account
-        - "USER:${ADMIN_USER:-admin}:hudson.model.Hudson.Administer"
+        - user:
+            name: "${ADMIN_USER:-admin}"
+            permissions:
+              - "hudson.model.Hudson.Administer"
         # Authenticated users get read access across the board
-        - "GROUP:authenticated:hudson.model.Hudson.Read"
-        - "GROUP:authenticated:hudson.model.Item.Read"
-        - "GROUP:authenticated:hudson.model.Item.Build"
-        - "GROUP:authenticated:hudson.model.Item.Cancel"
-        - "GROUP:authenticated:hudson.model.Item.Workspace"
-        - "GROUP:authenticated:hudson.model.Run.Replay"
-        - "GROUP:authenticated:hudson.model.View.Read"
+        - group:
+            name: "authenticated"
+            permissions:
+              - "hudson.model.Hudson.Read"
+              - "hudson.model.Item.Read"
+              - "hudson.model.Item.Build"
+              - "hudson.model.Item.Cancel"
+              - "hudson.model.Item.Workspace"
+              - "hudson.model.Run.Replay"
+              - "hudson.model.View.Read"
         # Anonymous gets nothing (deny-by-default)
 
   # ── CSRF protection ────────────────────────────────────────────────────────
@@ -85,10 +79,9 @@ jenkins:
         readTimeout: 15
         containerCapStr: "20"
         maxRequestsPerHostStr: "32"
-        retryCount: 3
         podRetention:
           never: {}
-        podTemplates:
+        templates:
 
           # ── docker-agent ─────────────────────────────────────────────────
           - name: "docker-agent"
@@ -143,9 +136,8 @@ jenkins:
                   memory: false
                   mountPath: "/var/lib/docker"
             annotations:
-              - annotation:
-                  key: "cluster-autoscaler.kubernetes.io/safe-to-evict"
-                  value: "false"
+              - key: "cluster-autoscaler.kubernetes.io/safe-to-evict"
+                value: "false"
 
           # ── node-agent ───────────────────────────────────────────────────
           - name: "node-agent"
@@ -357,7 +349,6 @@ unclassified:
 
   # ── GitHub ────────────────────────────────────────────────────────────────
   gitHubPluginConfig:
-    apiRateLimitChecker: ThrottleOnOver
     configs:
       - credentialsId: "github-app"
         name: "GitHub"
@@ -405,7 +396,7 @@ unclassified:
       otel.exporter.otlp.protocol=grpc
       otel.traces.exporter=otlp
       otel.metrics.exporter=otlp
-    exportOpenTelemetryConfigurationAsEnvironmentVariables: true
+    exportOtelConfigurationAsEnvironmentVariables: true
     observabilityBackends:
       - jaeger:
           jaegerBaseUrl: "${JAEGER_URL:-http://jaeger:16686}"

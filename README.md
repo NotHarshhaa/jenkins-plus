@@ -2,7 +2,7 @@
 
 <img src="https://img.shields.io/badge/Jenkins-Plus-D24939?style=for-the-badge&logo=jenkins&logoColor=white" alt="Jenkins Plus"/>
 
-# 🚀 jenkins-plus
+![Jenkins Plus Logo](https://camo.githubusercontent.com/4be717d5f921f8cba54b8f9959e3dcf67fb43acc443c02b7be58ea87e0dfbb8b/68747470733a2f2f7777772e6a656e6b696e732e696f2f696d616765732f6a656e6b696e732d6c6f676f2d7469746c652d6461726b2e737667)
 
 **A batteries-included Jenkins distribution — modern UI, 40+ pre-configured plugins, and one-command deployment.**
 
@@ -81,6 +81,7 @@ pipeline {
 - RBAC enabled, no anonymous access
 - CSRF protection enforced
 - JNLP agent port disabled by default
+- **Auto-detecting security realm**: Local accounts in dev (`OIDC_ISSUER` unset), OIDC SSO in production (`OIDC_ISSUER` set)
 - OIDC / LDAP pre-wired (supply credentials, not config)
 - Secrets via HashiCorp Vault or Kubernetes Secrets — never plaintext env vars
 
@@ -110,6 +111,8 @@ open http://localhost:9090   # Grafana (admin / admin)
 ```
 
 Default credentials: `admin` / `admin` — **change immediately** via `ADMIN_PASSWORD` env var.
+
+> **Note**: By default, Jenkins uses local accounts (dev mode). To enable OIDC SSO (production mode), set `OIDC_ISSUER`, `OIDC_CLIENT_ID`, and `OIDC_CLIENT_SECRET` in your `.env` file. The security realm auto-detects the mode at startup.
 
 ### Option 2 — `jpctl` CLI
 
@@ -319,14 +322,14 @@ All configuration via environment variables or `values.yaml`:
 
 | Variable | Default | Description |
 |---|---|---|
-| `ADMIN_PASSWORD` | `admin` | Initial admin password |
+| `ADMIN_PASSWORD` | `admin` | Initial admin password (used for local dev and OIDC escape-hatch) |
 | `ADMIN_EMAIL` | — | Admin email address |
 | `GITHUB_ORG` | — | GitHub org for branch source discovery |
 | `GITHUB_APP_ID` | — | GitHub App ID for auth |
 | `GITLAB_URL` | — | Self-hosted GitLab URL |
-| `OIDC_ISSUER` | — | OIDC provider URL (e.g. Okta, Google) |
-| `OIDC_CLIENT_ID` | — | OIDC client ID |
-| `OIDC_CLIENT_SECRET` | — | OIDC client secret |
+| `OIDC_ISSUER` | — | OIDC provider URL (e.g. `https://accounts.google.com`). When set, activates OIDC SSO mode; when empty, uses local accounts (dev mode) |
+| `OIDC_CLIENT_ID` | — | OIDC client ID (required when `OIDC_ISSUER` is set) |
+| `OIDC_CLIENT_SECRET` | — | OIDC client secret (required when `OIDC_ISSUER` is set) |
 | `VAULT_ADDR` | — | HashiCorp Vault address |
 | `VAULT_TOKEN` | — | Vault auth token |
 | `SLACK_WORKSPACE` | — | Slack workspace ID |
