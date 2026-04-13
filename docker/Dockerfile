@@ -62,6 +62,9 @@ ENV JENKINS_HOME=/var/jenkins_home
 # Copy pre-installed plugins from stage 1
 COPY --from=plugin-installer /usr/share/jenkins/ref/plugins /usr/share/jenkins/ref/plugins
 
+# Copy plugins.txt for plugin verification
+COPY jenkins-core/plugin-system/plugins.txt /usr/share/jenkins/plugins.txt
+
 # JCasC configuration (template — envsubst runs at container start via entrypoint.sh)
 ARG CACHEBUST=1
 COPY jenkins-core/jcasc/ /var/jenkins_home/casc_configs/
